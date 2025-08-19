@@ -33,20 +33,20 @@ impl MessageID {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Signal {
-    pub name: String,
-    pub start_bit: u64,
-    pub signal_size: u64,
-    pub byte_order: String,
-    pub value_type: String,
-    pub factor: f64,
-    pub offset: f64,
-    pub min: f64,
-    pub max: f64,
-    pub unit: String,
-    pub receivers: Vec<String>,
-    pub value_descriptions: HashMap<u64, String>,
-    pub multiplexer_type: String,
-    pub initial_value: f64,
+     pub name: String,
+     pub start_bit: u64,
+     pub signal_size: u64,
+     pub byte_order: String,
+     pub value_type: String,
+     pub factor: f64,
+     pub offset: f64,
+     pub min: f64,
+     pub max: f64,
+     pub unit: String,
+     pub receivers: Vec<String>,
+     pub value_descriptions: HashMap<u64, String>,
+     pub multiplexer_type: String,
+     pub initial_value: f64,
 }
 
 impl Signal {
@@ -202,7 +202,7 @@ impl TryFrom<&str> for Dbc {
         let messages = parse_message(dbc_input);
 
         if messages.is_empty() {
-            return Err(Error::Invalid(Dbc { messages }, dbc_input.to_string()))
+           return Err(Error::Invalid(Dbc { messages }, dbc_input.to_string()))
         }
         Ok(Dbc { messages })
     }
@@ -228,7 +228,7 @@ fn parse_message(dbc_input: &str) -> Vec<Message> {
         let message_id = if id < 0x800 {
             MessageID::Standard(id as u16)
         } else {
-            MessageID::Extended(id)
+           MessageID::Extended(id)
         };
 
         message.push(Message {
@@ -294,9 +294,9 @@ fn parse_explicit_cycle_time(dbc_input: &str) -> HashMap<u32, u32> {
     let mut map = HashMap::new();
 
     for cap in re_explicit.captures_iter(dbc_input) {
-        if let (Ok(id), Ok(cycle)) = (cap[1].parse::<u32>(), cap[2].parse::<u32>()) {
-            map.insert(id, cycle);
-        }
+      if let (Ok(id), Ok(cycle)) = (cap[1].parse::<u32>(), cap[2].parse::<u32>()) {
+          map.insert(id, cycle);
+      }
     }
     map
 }
@@ -328,7 +328,7 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
                 let signal_name = cap[1].to_string();
                 let byte_order = if &cap[5] == "1" { "Intel".to_string() } else { "Motorola".to_string() };
                 let value_type = if &cap[6] == "+" { "Unsigned".to_string() } else { "Signed".to_string() };
-
+                
                 // Parse multiplexer information
                 let multiplexer_info = cap[2].to_string();
                 let multiplexer_type = if multiplexer_info.is_empty() {
@@ -340,7 +340,7 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
                 } else {
                     "Plain".to_string()
                 };
-
+                
                 // Parse receivers from the end of the line
                 let receivers_str = cap.get(12).map_or("", |m| m.as_str()).trim();
                 let receivers: Vec<String> = if receivers_str.is_empty() {
@@ -348,16 +348,16 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
                 } else {
                     receivers_str.split(',').map(|s| s.trim().to_string()).collect()
                 };
-
+                
                 let signal_value_descriptions = value_descriptions
-                .get(&(current_message_id, signal_name.clone()))
-                .cloned()
-                .unwrap_or_default();
+                    .get(&(current_message_id, signal_name.clone()))
+                    .cloned()
+                    .unwrap_or_default();
 
                 let initial_value = initial_values
-                .get(&(current_message_id, signal_name.clone()))
-                .copied()
-                .unwrap_or(0.0);
+                    .get(&(current_message_id, signal_name.clone()))
+                    .copied()
+                    .unwrap_or(0.0);
 
                 let signal = Signal {
                     name: signal_name,
@@ -410,17 +410,17 @@ fn parse_value_descriptions(dbc_input: &str) -> HashMap<(u32, String), HashMap<u
         if let Ok(message_id) = cap[1].parse::<u32>() {
             let signal_name = cap[2].to_string();
             let values_str = &cap[3];
-
+            
             let mut signal_values = HashMap::new();
             let re_value_pair = Regex::new(r#"(\d+)\s+"([^"]+)""#).unwrap();
-
+            
             for value_cap in re_value_pair.captures_iter(values_str) {
                 if let Ok(value) = value_cap[1].parse::<u64>() {
                     let description = value_cap[2].to_string();
                     signal_values.insert(value, description);
                 }
             }
-
+            
             if !signal_values.is_empty() {
                 value_descriptions.insert((message_id, signal_name), signal_values);
             }
