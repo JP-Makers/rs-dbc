@@ -7,7 +7,7 @@
 
 **`rs-dbc`** is a library written in Rust for parsing and handling CAN DBC files.
 
-# 1. Example
+# Example
 
 ```rust
 use std::fs::File;
