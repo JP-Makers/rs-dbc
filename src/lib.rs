@@ -1,3 +1,35 @@
+//!
+//! rs-dbc is a library written in Rust for parsing and handling CAN DBC files.
+//!
+//! ```rust
+//! use std::fs::File;
+//! use std::io::{self, Read};
+//! use rs_dbc::Dbc;
+//! 
+//! fn main() -> io::Result<()> {
+//!     let mut f = File::open("./examples/simple.dbc")?;
+//!     let mut buffer = Vec::new();
+//!     f.read_to_end(&mut buffer)?;
+//! 
+//!     let dbc = Dbc::from_slice(&buffer).expect("Failed to parse DBC file");
+//! 
+//!     for msg in dbc.messages {
+//!         println!("Message Name: {}", msg.message_name);
+//!         println!("Message ID: 0x{:X}", msg.message_id.raw());
+//!         println!("ID-Format: {}", msg.message_id.kind());
+//! 
+//!         for sig in msg.signals {
+//!             println!("Signal Name: {}", sig.name);
+//!             println!("Byte Order: {}", sig.byte_order);
+//!             println!("Value Type: {}", sig.value_type);
+//!             println!("");
+//!         }
+//!         println!("");
+//!     }
+//!     Ok(())
+//! }
+//! ```
+
 use std::str;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -58,6 +90,7 @@ impl Signal {
         self.start_bit
     }
 
+    #[deprecated(note = "Experimental: may contain logical issues and subject to change")] 
     /// Returns the start bit as displayed in Vector CANdb++
     pub fn vector_start_bit(&self) -> u64 {
         // Vector CANdb++ uses the same conversion for both Intel and Motorola
@@ -86,7 +119,7 @@ impl Signal {
             _ => self.signal_size,
         }
     }
-
+    
     pub fn signal_size(&self) -> u64 {
         self.signal_size
     }
@@ -135,6 +168,7 @@ impl Signal {
         self.initial_value
     }
 
+    #[deprecated(note = "Experimental: may contain logical issues and subject to change")]
     /// Returns the initial value as displayed in Vector CANdb++
     /// Formula: (Raw value × factor) + offset
     pub fn vector_initial_value(&self) -> f64 {

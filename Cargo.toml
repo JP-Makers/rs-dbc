@@ -1,19 +1,19 @@
 [package]
 name = "rs_dbc"
-version = "0.10.0"
+version = "0.10.1"
 edition = "2024"
 authors = ["JP-Makers <arumugamchandra2003@gmail.com>"]
 description = """
 A library for CAN DBC parsing and handling
 """
 license = "MIT"
-homepage = "https://github.com/JP-Makers/rs-dbc"
+homepage = "https://gitlab.com/JP-Makers/rs-dbc"
 repository = "https://github.com/JP-Makers/rs-dbc"
 documentation = "https://docs.rs/rs_dbc/"
-exclude = ["/.github", "/dev"]
 readme = "README.md"
 keywords = ["can", "dbc", "automotive", "parser"]
 categories = ["parsing", "data-structures"]
 
 [dependencies]
 regex = "1.11.1"
+
