@@ -1,6 +1,6 @@
 [package]
 name = "rs_dbc"
-version = "0.10.1"
+version = "0.10.2"
 edition = "2024"
 authors = ["JP-Makers <arumugamchandra2003@gmail.com>"]
 description = """
@@ -15,5 +15,8 @@ keywords = ["can", "dbc", "automotive", "parser"]
 categories = ["parsing", "data-structures"]
 
 [dependencies]
-regex = "1.11.1"
+regex = "1.11.3"
+
+[dev-dependencies]
+clap = { version = "4.5.48", features = ["cargo"] }
 

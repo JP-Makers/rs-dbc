@@ -37,6 +37,13 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 ```
+
+# Test
+
+```
+cargo test && ./target/debug/examples/test -i examples/sample.dbc
+```
+
 ## 📞 Support
 
 - 🐛 **Issues**: [Git Issues](../../issues)
