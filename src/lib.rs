@@ -90,26 +90,23 @@ impl Signal {
         self.start_bit
     }
 
-    #[deprecated(note = "Experimental: may contain logical issues and subject to change")] 
     /// Returns the start bit as displayed in Vector CANdb++
     pub fn vector_start_bit(&self) -> u64 {
-        // Vector CANdb++ uses the same conversion for both Intel and Motorola
-        // Formula: start_bit - (signal_size - 1)
-        // Example: raw 63, signal_size 4 -> Vector 60
         match self.byte_order.as_str() {
             "Intel" => self.start_bit,
             "Motorola" => {
                 let start_byte = self.start_bit / 8;
                 let start_bit_in_byte = self.start_bit % 8;
-                let end_bit = self.start_bit.saturating_sub(self.signal_size - 1);
-                let end_byte = end_bit / 8;
+                let end_bit_1 = self.start_bit + 1;
+                let end_bit_2 = self.start_bit.saturating_sub(self.signal_size - 1);
+                let end_byte = end_bit_1 / 8;
 
-                if start_byte != end_byte || self.signal_size > 8 {
-                    end_bit
+                if start_byte != end_byte && self.signal_size > 8 {
+                    end_bit_1
                 }
                 else {
-                    if start_bit_in_byte != 7 {
-                        end_bit
+                    if start_bit_in_byte != 8 {
+                        end_bit_2
                     }
                     else {
                         self.start_bit
@@ -168,7 +165,6 @@ impl Signal {
         self.initial_value
     }
 
-    #[deprecated(note = "Experimental: may contain logical issues and subject to change")]
     /// Returns the initial value as displayed in Vector CANdb++
     /// Formula: (Raw value × factor) + offset
     pub fn vector_initial_value(&self) -> f64 {
