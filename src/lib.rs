@@ -104,13 +104,11 @@ impl Signal {
                 if start_byte != end_byte && self.signal_size > 8 {
                     end_bit_1
                 }
+                else if start_bit_in_byte != 8 {
+                    end_bit_2
+                }
                 else {
-                    if start_bit_in_byte != 8 {
-                        end_bit_2
-                    }
-                    else {
-                        self.start_bit
-                    }
+                    self.start_bit
                 }
             },
             _ => self.signal_size,
@@ -339,15 +337,14 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
     let lines: Vec<&str> = dbc_input.lines().collect();
 
     for line in lines {
-        if let Some(msg_cap) = Regex::new(r#"BO_\s+(\d+)\s+\w+:"#).unwrap().captures(line) {
-            if let Ok(id) = msg_cap[1].parse::<u32>() {
+        if let Some(msg_cap) = Regex::new(r#"BO_\s+(\d+)\s+\w+:"#).unwrap().captures(line)
+            && let Ok(id) = msg_cap[1].parse::<u32>() {
                 current_message_id = id;
-                signals_map.entry(current_message_id).or_insert_with(Vec::new);
+                signals_map.entry(current_message_id).or_default();
             }
-        }
 
-        if let Some(cap) = re_signal.captures(line) {
-            if let (Ok(start_bit), Ok(signal_size), Ok(factor), Ok(offset), Ok(min), Ok(max)) = (
+        if let Some(cap) = re_signal.captures(line)
+            && let (Ok(start_bit), Ok(signal_size), Ok(factor), Ok(offset), Ok(min), Ok(max)) = (
                 cap[3].parse::<u64>(),
                 cap[4].parse::<u64>(),
                 cap[7].parse::<f64>(),
@@ -410,7 +407,6 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
                     signals.push(signal);
                 }
             }
-        }
     }
 
     signals_map
