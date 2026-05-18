@@ -46,6 +46,9 @@ VAL_TABLE_ Read_Status_Alarm_REM_SB_Cyc 1 "on" 0 "off" ;
 VAL_TABLE_ Send_Coil_Remote_On_Off_Cyc 1 "on" 0 "off" ;
 
 
+BO_ 3 New_Message_11: 8 Vector__XXX
+ SG_ New_Signal_158 : 7|8@1+ (1,0) [0|0] "" Vector__XXX
+
 BO_ 2 Read_Object: 8 PSI9040_40
  SG_ Read_Status_Remote m505 : 35|1@0+ (1,0) [0|0] "" Vector__XXX
  SG_ Read_Actual_Power m509 : 23|16@0+ (0.019073777,0) [0|1020] "W" Vector__XXX
@@ -123,7 +126,7 @@ BO_ 2 Read_Object: 8 PSI9040_40
  SG_ Read_Mux M : 7|16@0+ (1,0) [0|0] ""  PC
 
 BO_ 1 Query_Object: 2 PC
- SG_ Query_Mux : 7|16@0+ (1,0) [0|0] ""  PSI9040_40
+ SG_ Query_Mux : 0|16@1+ (1,0) [0|0] ""  PSI9040_40
 
 BO_ 0 Send_Object: 8 PC
  SG_ Number_of_registers : 23|8@0+ (1,0) [1|1] "" Vector__XXX
@@ -303,26 +306,26 @@ BA_ "BusType" "CAN";
 BA_ "DBName" "PSI9000";
 BA_ "GenMsgSendType" BO_ 2 1;
 BA_ "GenMsgSendType" BO_ 1 1;
-BA_ "GenMsgILSupport" BO_ 0 0;
-BA_ "GenMsgAutoGenSnd" BO_ 0 0;
-BA_ "GenMsgAutoGenDsp" BO_ 0 0;
 BA_ "GenMsgSendType" BO_ 0 1;
-BA_ "GenMsgCycleTime" BO_ 258 1000;
+BA_ "GenMsgAutoGenDsp" BO_ 0 0;
+BA_ "GenMsgAutoGenSnd" BO_ 0 0;
+BA_ "GenMsgILSupport" BO_ 0 0;
 BA_ "GenMsgSendType" BO_ 258 1;
-BA_ "GenMsgCycleTime" BO_ 260 1000;
+BA_ "GenMsgCycleTime" BO_ 258 1000;
 BA_ "GenMsgSendType" BO_ 260 1;
-BA_ "GenMsgCycleTime" BO_ 259 1000;
+BA_ "GenMsgCycleTime" BO_ 260 1000;
 BA_ "GenMsgSendType" BO_ 259 1;
-BA_ "GenMsgCycleTime" BO_ 256 20;
+BA_ "GenMsgCycleTime" BO_ 259 1000;
 BA_ "GenMsgSendType" BO_ 256 1;
-BA_ "GenMsgCycleTime" BO_ 257 20;
+BA_ "GenMsgCycleTime" BO_ 256 20;
 BA_ "GenMsgSendType" BO_ 257 1;
-BA_ "GenSigStartValue" SG_ 256 Read_Status_Remote_Cyclic 1;
-BA_ "GenMsgCycleTime" BO_ 512 20;
+BA_ "GenMsgCycleTime" BO_ 257 20;
 BA_ "GenMsgSendType" BO_ 512 1;
-BA_ "GenMsgCycleTime" BO_ 513 20;
+BA_ "GenMsgCycleTime" BO_ 512 20;
 BA_ "GenMsgSendType" BO_ 513 1;
+BA_ "GenMsgCycleTime" BO_ 513 20;
 BA_ "GenSigStartValue" SG_ 0 Number_of_registers 1;
+BA_ "GenSigStartValue" SG_ 256 Read_Status_Remote_Cyclic 1;
 VAL_ 2 Read_Status_Remote 1 "On" 0 "Off" ;
 VAL_ 2 Read_MS_Condition 65535 "init OK" 65533 "different models detected" 1 "init running" 0 "not initialised" ;
 VAL_ 2 Read_MS_Coil_Share_Bus 65280 "Master" 0 "Slave" ;
