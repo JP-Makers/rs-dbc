@@ -16,3 +16,7 @@ categories = ["parsing", "data-structures"]
 
 [dependencies]
 regex = "1.12.3"
+
+
+[dev-dependencies]
+clap = { version = "4.6.1", features = ["cargo"] }

@@ -5,19 +5,19 @@
 //! use std::fs::File;
 //! use std::io::{self, Read};
 //! use rs_dbc::Dbc;
-//! 
+//!
 //! fn main() -> io::Result<()> {
 //!     let mut f = File::open("./examples/simple.dbc")?;
 //!     let mut buffer = Vec::new();
 //!     f.read_to_end(&mut buffer)?;
-//! 
+//!
 //!     let dbc = Dbc::from_slice(&buffer).expect("Failed to parse DBC file");
-//! 
+//!
 //!     for msg in dbc.messages {
 //!         println!("Message Name: {}", msg.message_name);
 //!         println!("Message ID: 0x{:X}", msg.message_id.raw());
 //!         println!("ID-Format: {}", msg.message_id.kind());
-//! 
+//!
 //!         for sig in msg.signals {
 //!             println!("Signal Name: {}", sig.name);
 //!             println!("Byte Order: {}", sig.byte_order);
@@ -30,10 +30,10 @@
 //! }
 //! ```
 
-use std::str;
+use regex::Regex;
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use regex::Regex;
+use std::str;
 
 use std::fmt;
 
@@ -128,20 +128,20 @@ impl fmt::Display for MultiplexIndicator {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Signal {
-     pub name: String,
-     pub start_bit: u64,
-     pub signal_size: u64,
-     pub byte_order: ByteOrder,
-     pub value_type: ValueType,
-     pub factor: f64,
-     pub offset: f64,
-     pub min: f64,
-     pub max: f64,
-     pub unit: String,
-     pub receivers: Vec<String>,
-     pub value_descriptions: HashMap<u64, String>,
-     pub multiplexer_type: MultiplexIndicator,
-     pub initial_value: f64,
+    pub name: String,
+    pub start_bit: u64,
+    pub signal_size: u64,
+    pub byte_order: ByteOrder,
+    pub value_type: ValueType,
+    pub factor: f64,
+    pub offset: f64,
+    pub min: f64,
+    pub max: f64,
+    pub unit: String,
+    pub receivers: Vec<String>,
+    pub value_descriptions: HashMap<u64, String>,
+    pub multiplexer_type: MultiplexIndicator,
+    pub initial_value: f64,
 }
 
 impl Signal {
@@ -166,19 +166,15 @@ impl Signal {
 
                 if start_byte != end_byte && self.signal_size > 8 {
                     end_bit_1
+                } else if start_bit_in_byte != 8 {
+                    end_bit_2
+                } else {
+                    self.start_bit
                 }
-                else {
-                    if start_bit_in_byte != 8 {
-                        end_bit_2
-                    }
-                    else {
-                        self.start_bit
-                    }
-                }
-            },
+            }
         }
     }
-    
+
     pub fn signal_size(&self) -> u64 {
         self.signal_size
     }
@@ -308,7 +304,7 @@ impl TryFrom<&str> for Dbc {
         let messages = parse_message(dbc_input);
 
         if messages.is_empty() {
-           return Err(Error::Invalid(Dbc { messages }, dbc_input.to_string()))
+            return Err(Error::Invalid(Dbc { messages }, dbc_input.to_string()));
         }
         Ok(Dbc { messages })
     }
@@ -330,13 +326,19 @@ fn parse_message(dbc_input: &str) -> Vec<Message> {
         let cycle_time = explicit_cycles.get(&id).copied().unwrap_or(default_cycles);
         let message_size = message_size.get(&id).copied().unwrap_or(0);
         let message_signals = signals.get(&id).cloned().unwrap_or_else(Vec::new);
-        let transmitter = message_transmitters.get(&id).cloned().unwrap_or_else(|| "Vector__XXX".to_string());
-        let tx_method = explicit_tx_methods.get(&id).cloned().unwrap_or_else(|| default_tx_method.clone());
+        let transmitter = message_transmitters
+            .get(&id)
+            .cloned()
+            .unwrap_or_else(|| "Vector__XXX".to_string());
+        let tx_method = explicit_tx_methods
+            .get(&id)
+            .cloned()
+            .unwrap_or_else(|| default_tx_method.clone());
 
         let message_id = if id < 0x800 {
             MessageID::Standard(id as u16)
         } else {
-           MessageID::Extended(id)
+            MessageID::Extended(id)
         };
 
         message.push(Message {
@@ -403,14 +405,17 @@ fn parse_explicit_cycle_time(dbc_input: &str) -> HashMap<u32, u32> {
     let mut map = HashMap::new();
 
     for cap in re_explicit.captures_iter(dbc_input) {
-      if let (Ok(id), Ok(cycle)) = (cap[1].parse::<u32>(), cap[2].parse::<u32>()) {
-          map.insert(id, cycle);
-      }
+        if let (Ok(id), Ok(cycle)) = (cap[1].parse::<u32>(), cap[2].parse::<u32>()) {
+            map.insert(id, cycle);
+        }
     }
     map
 }
 
-fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), HashMap<u64, String>>) -> HashMap<u32, Vec<Signal>> {
+fn parse_signals(
+    dbc_input: &str,
+    value_descriptions: &HashMap<(u32, String), HashMap<u64, String>>,
+) -> HashMap<u32, Vec<Signal>> {
     let re_signal = Regex::new(r#"SG_\s+(\w+)\s*([mM]?\d*)\s*:\s*(\d+)\|(\d+)@([01])([+-])\s*\(([^,]+),([^)]+)\)\s*\[([^|]+)\|([^\]]+)\]\s*"([^"]*)"\s*(.*)"#).unwrap();
     let initial_values = parse_initial_values(dbc_input);
     let sig_valtypes = parse_sig_valtypes(dbc_input);
@@ -419,84 +424,95 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
     let lines: Vec<&str> = dbc_input.lines().collect();
 
     for line in lines {
-        if let Some(msg_cap) = Regex::new(r#"BO_\s+(\d+)\s+\w+:"#).unwrap().captures(line) {
-            if let Ok(id) = msg_cap[1].parse::<u32>() {
-                current_message_id = id;
-                signals_map.entry(current_message_id).or_insert_with(Vec::new);
-            }
+        if let Some(msg_cap) = Regex::new(r#"BO_\s+(\d+)\s+\w+:"#).unwrap().captures(line)
+            && let Ok(id) = msg_cap[1].parse::<u32>()
+        {
+            current_message_id = id;
+            signals_map.entry(current_message_id).or_default();
         }
 
-        if let Some(cap) = re_signal.captures(line) {
-            if let (Ok(start_bit), Ok(signal_size), Ok(factor), Ok(offset), Ok(min), Ok(max)) = (
+        if let Some(cap) = re_signal.captures(line)
+            && let (Ok(start_bit), Ok(signal_size), Ok(factor), Ok(offset), Ok(min), Ok(max)) = (
                 cap[3].parse::<u64>(),
                 cap[4].parse::<u64>(),
                 cap[7].parse::<f64>(),
                 cap[8].parse::<f64>(),
                 cap[9].parse::<f64>(),
-                cap[10].parse::<f64>()
-            ) {
-                let signal_name = cap[1].to_string();
-                let byte_order = if &cap[5] == "1" { ByteOrder::Intel } else { ByteOrder::Motorola };
-                let mut value_type = if &cap[6] == "+" { ValueType::Unsigned } else { ValueType::Signed };
-                
-                if let Some(valtype) = sig_valtypes.get(&(current_message_id, signal_name.clone())) {
-                    if *valtype == 1 {
-                        value_type = ValueType::Float;
-                    } else if *valtype == 2 {
-                        value_type = ValueType::Double;
-                    }
+                cap[10].parse::<f64>(),
+            )
+        {
+            let signal_name = cap[1].to_string();
+            let byte_order = if &cap[5] == "1" {
+                ByteOrder::Intel
+            } else {
+                ByteOrder::Motorola
+            };
+            let mut value_type = if &cap[6] == "+" {
+                ValueType::Unsigned
+            } else {
+                ValueType::Signed
+            };
+
+            if let Some(valtype) = sig_valtypes.get(&(current_message_id, signal_name.clone())) {
+                if *valtype == 1 {
+                    value_type = ValueType::Float;
+                } else if *valtype == 2 {
+                    value_type = ValueType::Double;
                 }
-                
-                // Parse multiplexer information
-                let multiplexer_info = cap[2].to_string();
-                let multiplexer_type = if multiplexer_info.is_empty() {
-                    MultiplexIndicator::Plain
-                } else if multiplexer_info == "M" {
-                    MultiplexIndicator::Multiplexer
-                } else if multiplexer_info.starts_with("m") {
-                    MultiplexIndicator::Multiplexed
-                } else {
-                    MultiplexIndicator::Plain
-                };
-                
-                // Parse receivers from the end of the line
-                let receivers_str = cap.get(12).map_or("", |m| m.as_str()).trim();
-                let receivers: Vec<String> = if receivers_str.is_empty() {
-                    Vec::new()
-                } else {
-                    receivers_str.split(',').map(|s| s.trim().to_string()).collect()
-                };
-                
-                let signal_value_descriptions = value_descriptions
-                    .get(&(current_message_id, signal_name.clone()))
-                    .cloned()
-                    .unwrap_or_default();
+            }
 
-                let initial_value = initial_values
-                    .get(&(current_message_id, signal_name.clone()))
-                    .copied()
-                    .unwrap_or(0.0);
+            // Parse multiplexer information
+            let multiplexer_info = cap[2].to_string();
+            let multiplexer_type = if multiplexer_info.is_empty() {
+                MultiplexIndicator::Plain
+            } else if multiplexer_info == "M" {
+                MultiplexIndicator::Multiplexer
+            } else if multiplexer_info.starts_with("m") {
+                MultiplexIndicator::Multiplexed
+            } else {
+                MultiplexIndicator::Plain
+            };
 
-                let signal = Signal {
-                    name: signal_name,
-                    start_bit,
-                    signal_size,
-                    byte_order,
-                    value_type,
-                    factor,
-                    offset,
-                    min,
-                    max,
-                    unit: cap[11].to_string(),
-                    receivers,
-                    value_descriptions: signal_value_descriptions,
-                    multiplexer_type,
-                    initial_value,
-                };
+            // Parse receivers from the end of the line
+            let receivers_str = cap.get(12).map_or("", |m| m.as_str()).trim();
+            let receivers: Vec<String> = if receivers_str.is_empty() {
+                Vec::new()
+            } else {
+                receivers_str
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect()
+            };
 
-                if let Some(signals) = signals_map.get_mut(&current_message_id) {
-                    signals.push(signal);
-                }
+            let signal_value_descriptions = value_descriptions
+                .get(&(current_message_id, signal_name.clone()))
+                .cloned()
+                .unwrap_or_default();
+
+            let initial_value = initial_values
+                .get(&(current_message_id, signal_name.clone()))
+                .copied()
+                .unwrap_or(0.0);
+
+            let signal = Signal {
+                name: signal_name,
+                start_bit,
+                signal_size,
+                byte_order,
+                value_type,
+                factor,
+                offset,
+                min,
+                max,
+                unit: cap[11].to_string(),
+                receivers,
+                value_descriptions: signal_value_descriptions,
+                multiplexer_type,
+                initial_value,
+            };
+
+            if let Some(signals) = signals_map.get_mut(&current_message_id) {
+                signals.push(signal);
             }
         }
     }
@@ -505,7 +521,8 @@ fn parse_signals(dbc_input: &str, value_descriptions: &HashMap<(u32, String), Ha
 }
 
 fn parse_initial_values(dbc_input: &str) -> HashMap<(u32, String), f64> {
-    let re_sig_val = Regex::new(r#"BA_\s+"GenSigStartValue"\s+SG_\s+(\d+)\s+([^\s]+)\s+([^;]+);"#).unwrap();
+    let re_sig_val =
+        Regex::new(r#"BA_\s+"GenSigStartValue"\s+SG_\s+(\d+)\s+([^\s]+)\s+([^;]+);"#).unwrap();
     let mut initial_values: HashMap<(u32, String), f64> = HashMap::new();
 
     for cap in re_sig_val.captures_iter(dbc_input) {
@@ -521,7 +538,8 @@ fn parse_initial_values(dbc_input: &str) -> HashMap<(u32, String), f64> {
 }
 
 fn parse_sig_valtypes(dbc_input: &str) -> HashMap<(u32, String), u32> {
-    let re_valtype = Regex::new(r#"SIG_VALTYPE_\s+(\d+)\s+([a-zA-Z0-9_]+)\s*:\s*(\d+)\s*;"#).unwrap();
+    let re_valtype =
+        Regex::new(r#"SIG_VALTYPE_\s+(\d+)\s+([a-zA-Z0-9_]+)\s*:\s*(\d+)\s*;"#).unwrap();
     let mut map = HashMap::new();
     for cap in re_valtype.captures_iter(dbc_input) {
         if let (Ok(msg_id), Ok(val_type)) = (cap[1].parse::<u32>(), cap[3].parse::<u32>()) {
@@ -539,17 +557,17 @@ fn parse_value_descriptions(dbc_input: &str) -> HashMap<(u32, String), HashMap<u
         if let Ok(message_id) = cap[1].parse::<u32>() {
             let signal_name = cap[2].to_string();
             let values_str = &cap[3];
-            
+
             let mut signal_values = HashMap::new();
             let re_value_pair = Regex::new(r#"(\d+)\s+"([^"]+)""#).unwrap();
-            
+
             for value_cap in re_value_pair.captures_iter(values_str) {
                 if let Ok(value) = value_cap[1].parse::<u64>() {
                     let description = value_cap[2].to_string();
                     signal_values.insert(value, description);
                 }
             }
-            
+
             if !signal_values.is_empty() {
                 value_descriptions.insert((message_id, signal_name), signal_values);
             }
@@ -564,7 +582,8 @@ fn parse_tx_methods(dbc_input: &str) -> (String, HashMap<u32, String>) {
     let mut enum_variants = Vec::new();
     if let Some(cap) = re_enum.captures(dbc_input) {
         let enums_str = &cap[1];
-        enum_variants = enums_str.split(',')
+        enum_variants = enums_str
+            .split(',')
             .map(|s| s.trim().trim_matches('"').to_string())
             .collect();
     }
